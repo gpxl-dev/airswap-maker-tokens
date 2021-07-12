@@ -47,13 +47,13 @@ function App() {
         'Loading...'
       ) : (
         <div
-          className='font-mono grid grid-cols-2 max-w-full gap-x-8 gap-y-4'
+          className="font-mono grid grid-cols-2 max-w-full gap-x-8 gap-y-4"
           style={{
             gridTemplateColumns: 'auto 1fr',
           }}
         >
-          <span className='font-bold'>Maker</span>
-          <span className='font-bold'>Supported tokens</span>
+          <span className="font-bold">Maker</span>
+          <span className="font-bold">Supported tokens</span>
           {stakers.map((staker) => {
             const isLoading = stakerTokensLoading[staker];
             const supportedTokens = stakerTokens[staker];
