@@ -1,15 +1,15 @@
-import { Fragment } from "react";
-import classNames from "classnames";
-import { useEffect, useState } from "react";
-import { getSupoprtedTokensForStaker } from "./registryApi";
-import { TokenInfo } from "@uniswap/token-lists";
-import { fetchTokens, findTokenByAddress } from "@airswap/metadata";
-import truncateEthAddress from "truncate-eth-address";
+import { Fragment } from 'react';
+import classNames from 'classnames';
+import { useEffect, useState } from 'react';
+import { getSupoprtedTokensForStaker } from './registryApi';
+import { TokenInfo } from '@uniswap/token-lists';
+import { fetchTokens, findTokenByAddress } from '@airswap/metadata';
+import truncateEthAddress from 'truncate-eth-address';
 
 function App() {
   const [tokens, setTokens] = useState<TokenInfo[] | null>(null);
   const [stakers] = useState<string[]>([
-    "0x7bE351f273Ef11892E4125045D363F56Cb755966",
+    '0x7bE351f273Ef11892E4125045D363F56Cb755966',
   ]);
   const [stakerTokens, setstakerTokens] = useState<{
     [staker: string]: string[];
@@ -38,22 +38,22 @@ function App() {
   return (
     <div
       className={classNames(
-        "flex flex-col h-full p-4",
-        "text-white",
-        "bg-gradient-to-br from-gray-600 via-teal-700 to-gray-800"
+        'flex flex-col h-full p-4',
+        'text-white',
+        'bg-gradient-to-br from-gray-600 via-teal-700 to-gray-800'
       )}
     >
       {!tokens ? (
-        "Loading..."
+        'Loading...'
       ) : (
         <div
-          className="font-mono grid grid-cols-2 max-w-xl gap-x-8 gap-y-4"
+          className='font-mono grid grid-cols-2 max-w-full gap-x-8 gap-y-4'
           style={{
-            gridTemplateColumns: "auto 1fr",
+            gridTemplateColumns: 'auto 1fr',
           }}
         >
-          <span className="font-bold">Maker</span>
-          <span className="font-bold">Supported tokens</span>
+          <span className='font-bold'>Maker</span>
+          <span className='font-bold'>Supported tokens</span>
           {stakers.map((staker) => {
             const isLoading = stakerTokensLoading[staker];
             const supportedTokens = stakerTokens[staker];
@@ -65,7 +65,7 @@ function App() {
                 const token = findTokenByAddress(lowerCaseTokenAddress, tokens);
                 return token.symbol;
               });
-              tokenContent = <div>{tokenSymbols.join(", ")}</div>;
+              tokenContent = <div>{tokenSymbols.join(', ')}</div>;
             } else {
               tokenContent = <div>Loading</div>;
             }
