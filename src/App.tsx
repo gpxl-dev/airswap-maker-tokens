@@ -9,6 +9,7 @@ import truncateEthAddress from "truncate-eth-address";
 function App() {
   const [tokens, setTokens] = useState<TokenInfo[] | null>(null);
   const [stakers] = useState<string[]>([
+    "0x00000000000080c886232e9b7ebbfb942b5987aa",
     "0x7bE351f273Ef11892E4125045D363F56Cb755966",
   ]);
   const [stakerTokens, setstakerTokens] = useState<{
@@ -63,7 +64,12 @@ function App() {
               const tokenSymbols = supportedTokens.map((tokenAddress) => {
                 const lowerCaseTokenAddress = tokenAddress.toLowerCase();
                 const token = findTokenByAddress(lowerCaseTokenAddress, tokens);
-                return token.symbol;
+
+                if (typeof token !== "undefined") {
+                  return token.symbol;
+                } else {
+                  return "?";
+                }
               });
               tokenContent = <div>{tokenSymbols.join(", ")}</div>;
             } else {
