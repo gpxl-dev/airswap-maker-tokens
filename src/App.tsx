@@ -10,6 +10,7 @@ function App() {
   const [tokens, setTokens] = useState<TokenInfo[] | null>(null);
   const [stakers] = useState<string[]>([
     "0x7bE351f273Ef11892E4125045D363F56Cb755966",
+    "0x00000000000080c886232e9b7ebbfb942b5987aa",
   ]);
   const [stakerTokens, setstakerTokens] = useState<{
     [staker: string]: string[];
@@ -63,7 +64,7 @@ function App() {
               const tokenSymbols = supportedTokens.map((tokenAddress) => {
                 const lowerCaseTokenAddress = tokenAddress.toLowerCase();
                 const token = findTokenByAddress(lowerCaseTokenAddress, tokens);
-                return token.symbol;
+                return token?.symbol || "???";
               });
               tokenContent = <div>{tokenSymbols.join(", ")}</div>;
             } else {
