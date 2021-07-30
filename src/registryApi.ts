@@ -21,3 +21,14 @@ export const getSupoprtedTokensForStaker: (
     return [];
   }
 };
+
+export const getURLsForStakers: (stakers: string[]) => Promise<string[]> =
+  async (stakers) => {
+    try {
+      const urls: string[] = await registryContract.getURLsForStakers(stakers);
+      return urls;
+    } catch (e) {
+      console.error("Error getting staker urls", e);
+      return [];
+    }
+  };
