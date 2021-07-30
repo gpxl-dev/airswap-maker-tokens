@@ -17,6 +17,7 @@ function App() {
     "0x7bE351f273Ef11892E4125045D363F56Cb755966",
     "0x00000000000080c886232e9b7ebbfb942b5987aa",
     "0x4f3a120e72c76c22ae802d129f599bfdbc31cb81",
+    "0x567cd244d9f05bbfaf6fd421544f6d9faecada61"
   ]);
   const [stakerTokens, setstakerTokens] = useState<{
     [staker: string]: string[];
