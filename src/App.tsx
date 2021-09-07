@@ -1,7 +1,7 @@
-import { Fragment } from "react";
+import { Fragment, useReducer } from "react";
 import classNames from "classnames";
-import { useEffect, useState } from "react";
-import { getSupoprtedTokensForStaker, getURLsForStakers } from "./registryApi";
+import { useEffect } from "react";
+import { getStakerTokens, getURLsForStakers } from "./registryApi";
 import { TokenInfo } from "@uniswap/token-lists";
 import { fetchTokens, findTokenByAddress } from "@airswap/metadata";
 import truncateEthAddress from "truncate-eth-address";
@@ -10,41 +10,70 @@ import { CgExternal } from "react-icons/cg";
 
 import "react-tippy/dist/tippy.css";
 
-function App() {
-  const [tokens, setTokens] = useState<TokenInfo[] | null>(null);
-  const [stakerURLs, setStakerURLs] = useState<string[]>([]);
-  const [stakers] = useState<string[]>([
-    "0x7bE351f273Ef11892E4125045D363F56Cb755966",
-    "0x00000000000080c886232e9b7ebbfb942b5987aa",
-    "0x4f3a120e72c76c22ae802d129f599bfdbc31cb81",
-    "0x567cd244d9f05bbfaf6fd421544f6d9faecada61"
-  ]);
-  const [stakerTokens, setstakerTokens] = useState<{
-    [staker: string]: string[];
-  }>({});
-  const [stakerTokensLoading, setstakerTokensLoading] = useState<{
-    [staker: string]: boolean;
-  }>({});
+type AppState = {
+  stakers: {
+    [address: string]: {
+      supportedTokens: string[];
+      url: string;
+    };
+  };
+  tokenInfo: TokenInfo[];
+};
 
+const initialState: AppState = { stakers: {}, tokenInfo: [] };
+
+const reducer = (state: AppState, action: { type: string; payload: any }) => {
+  const { type, payload } = action;
+  switch (type) {
+    case "set_supported_tokens": {
+      const stakerTokens: Record<string, string[]> = payload;
+      const stakers = Object.keys(stakerTokens);
+      const newState = { ...state };
+      stakers.forEach((stakerAddress) => {
+        const supportedTokens = stakerTokens[stakerAddress];
+        newState.stakers[stakerAddress] = {
+          url: newState.stakers[stakerAddress]?.url || "",
+          supportedTokens,
+        };
+      });
+      return newState;
+    }
+    case "set_staker_urls": {
+      const [addresses, urls]: [string[], string[]] = payload;
+      const newState = { ...state };
+      addresses.forEach((address, i) => {
+        newState.stakers[address].url = urls[i];
+      });
+      return newState;
+    }
+    case "set_token_info":
+      return { ...state, tokenInfo: payload };
+
+    default:
+      return state;
+  }
+};
+
+function App() {
+  const [state, dispatch] = useReducer(reducer, initialState);
   // Load tokens on load
   useEffect(() => {
     fetchTokens(1).then((tokens) => {
-      setTokens(tokens);
+      dispatch({ type: "set_token_info", payload: tokens });
     });
+
+    const getTokensAndUrls = async () => {
+      const stakerTokens = await getStakerTokens();
+      dispatch({ type: "set_supported_tokens", payload: stakerTokens });
+      const stakers = Object.keys(stakerTokens);
+      const urls = await getURLsForStakers(stakers);
+      dispatch({ type: "set_staker_urls", payload: [stakers, urls] });
+    };
+    getTokensAndUrls();
   }, []);
 
-  useEffect(() => {
-    stakers.forEach(async (staker) => {
-      if (stakerTokensLoading[staker] == null) {
-        setstakerTokensLoading((prev) => ({ ...prev, [staker]: true }));
-        const stakerTokens = await getSupoprtedTokensForStaker(staker);
-        setstakerTokensLoading((prev) => ({ ...prev, [staker]: false }));
-        setstakerTokens((prev) => ({ ...prev, [staker]: stakerTokens }));
-      }
-    });
+  const stakerAddressess = Object.keys(state.stakers);
 
-    getURLsForStakers(stakers).then((urls) => setStakerURLs(urls));
-  }, [stakers, stakerTokensLoading]);
   return (
     <div
       className={classNames(
@@ -53,7 +82,7 @@ function App() {
         "bg-gradient-to-br from-gray-600 via-teal-700 to-gray-800"
       )}
     >
-      {!tokens ? (
+      {!stakerAddressess.length ? (
         "Loading..."
       ) : (
         <div
@@ -64,66 +93,61 @@ function App() {
         >
           <span className="font-bold">Staker</span>
           <span className="font-bold">Supported tokens</span>
-          {stakers.map((staker, i) => {
-            const isLoading = stakerTokensLoading[staker];
-            const supportedTokens = stakerTokens[staker];
+          {stakerAddressess.map((staker, i) => {
+            const supportedTokens = state.stakers[staker].supportedTokens;
             let tokenContent;
 
-            if (!isLoading && supportedTokens) {
-              tokenContent = (
-                <div>
-                  {supportedTokens.map((tokenAddress, i) => {
-                    const isLast = i === supportedTokens.length - 1;
-                    const lowerCaseTokenAddress = tokenAddress.toLowerCase();
-                    const token = findTokenByAddress(
-                      lowerCaseTokenAddress,
-                      tokens
-                    );
-                    if (token) {
-                      return token.symbol + (!isLast ? ", " : "");
-                    } else {
-                      return (
-                        <span
-                          className="cursor-pointer"
-                          key={`${staker}-${tokenAddress}`}
+            tokenContent = (
+              <div>
+                {supportedTokens.map((tokenAddress, i) => {
+                  const isLast = i === supportedTokens.length - 1;
+                  const lowerCaseTokenAddress = tokenAddress.toLowerCase();
+                  const token = findTokenByAddress(
+                    lowerCaseTokenAddress,
+                    state.tokenInfo
+                  );
+                  if (token) {
+                    return token.symbol + (!isLast ? ", " : "");
+                  } else {
+                    return (
+                      <span
+                        className="cursor-pointer"
+                        key={`${staker}-${tokenAddress}`}
+                      >
+                        <Tooltip
+                          trigger="click"
+                          interactive
+                          position="bottom"
+                          arrow={true}
+                          arrowSize="big"
+                          theme="dark"
+                          html={
+                            <div className="flex flex-col">
+                              <span>{tokenAddress}</span>
+                              <a
+                                className="underline"
+                                href={`https://etherscan.io/token/${tokenAddress}`}
+                              >
+                                Click here to view on etherscan{" "}
+                                <CgExternal className="inline-block" />
+                              </a>
+                            </div>
+                          }
                         >
-                          <Tooltip
-                            trigger="click"
-                            interactive
-                            position="bottom"
-                            arrow={true}
-                            arrowSize="big"
-                            theme="dark"
-                            html={
-                              <div className="flex flex-col">
-                                <span>{tokenAddress}</span>
-                                <a
-                                  className="underline"
-                                  href={`https://etherscan.io/token/${tokenAddress}`}
-                                >
-                                  Click here to view on etherscan{" "}
-                                  <CgExternal className="inline-block" />
-                                </a>
-                              </div>
-                            }
-                          >
-                            <span>???</span>
-                          </Tooltip>
-                          {!isLast && ", "}
-                        </span>
-                      );
-                    }
-                  })}
-                </div>
-              );
-            } else {
-              tokenContent = <div>Loading</div>;
-            }
+                          <span>???</span>
+                        </Tooltip>
+                        {!isLast && ", "}
+                      </span>
+                    );
+                  }
+                })}
+              </div>
+            );
             return (
               <Fragment key={staker}>
                 <div className="flex flex-col">
                   <span>{truncateEthAddress(staker)}</span>
-                  <span className="text-sm">{stakerURLs[i]}</span>
+                  <span className="text-sm">{state.stakers[staker].url}</span>
                 </div>
                 <div>{tokenContent}</div>
               </Fragment>
